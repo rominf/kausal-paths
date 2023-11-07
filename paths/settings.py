@@ -336,7 +336,6 @@ LANGUAGE_CODE = 'en'
 TIME_ZONE = 'Europe/Helsinki'
 USE_I18N = True
 WAGTAIL_I18N_ENABLED = True
-USE_L10N = True
 USE_TZ = True
 LOCALE_PATHS = [
     os.path.join(BASE_DIR, 'locale')
@@ -376,15 +375,25 @@ STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'static_overrides'),
 ]
 
-STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.ManifestStaticFilesStorage'
 
 MEDIA_FILES_S3_ENDPOINT= env('MEDIA_FILES_S3_ENDPOINT')
 MEDIA_FILES_S3_BUCKET = env('MEDIA_FILES_S3_BUCKET')
 MEDIA_FILES_S3_ACCESS_KEY_ID = env('MEDIA_FILES_S3_ACCESS_KEY_ID')
 MEDIA_FILES_S3_SECRET_ACCESS_KEY = env('MEDIA_FILES_S3_SECRET_ACCESS_KEY')
 MEDIA_FILES_S3_CUSTOM_DOMAIN = env('MEDIA_FILES_S3_CUSTOM_DOMAIN')
+
+STORAGES = {
+    'default': {
+        'BACKEND': 'django.core.files.storage.FileSystemStorage',
+    },
+    'staticfiles': {
+        'BACKEND': 'django.contrib.staticfiles.storage.ManifestStaticFilesStorage'
+    }
+}
+
 if MEDIA_FILES_S3_ENDPOINT:
-    DEFAULT_FILE_STORAGE = 'paths.storage.MediaFilesS3Storage'
+    STORAGES['default']['BACKEND'] = 'paths.storage.MediaFilesS3Storage'
+
 
 STATIC_URL = env('STATIC_URL')
 MEDIA_URL = env('MEDIA_URL')

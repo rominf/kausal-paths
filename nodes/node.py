@@ -17,6 +17,7 @@ import numpy as np
 import pandas as pd
 import pint_pandas
 import polars as pl
+from polars.datatypes import IntegerType
 from rich import print as pprint
 
 from common import polars as ppl
@@ -850,6 +851,9 @@ class Node:
 
         if YEAR_COLUMN not in meta.primary_keys:
             raise NodeError(self, "'%s' column missing" % YEAR_COLUMN)
+
+        if df.schema[YEAR_COLUMN] not in pl.INTEGER_DTYPES:
+            raise NodeError(self, "Invalid dtype for 'Year': %s" % df.schema[YEAR_COLUMN])
 
         ldf = df.lazy()
         dupe_rows = (

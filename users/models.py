@@ -1,3 +1,4 @@
+from typing import Any, Iterable
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
@@ -6,7 +7,7 @@ from nodes.models import InstanceConfig
 from .base import AbstractUser
 
 
-class User(AbstractUser):
+class User(AbstractUser):  # type: ignore[django-manager-missing]
     selected_instance = models.ForeignKey(
         'nodes.InstanceConfig', null=True, blank=True, on_delete=models.SET_NULL
     )
