@@ -49,8 +49,10 @@ def _get_context(instance_id: str):
 def get_nodes(instance_id: str):
     context = _get_context(instance_id)
     name = '%sNodes' % (instance_id.capitalize())
-    kls = namedtuple(name, list(context.nodes.keys()))  # type: ignore
-    obj = kls(**context.nodes)
+    keys = list(context.nodes.keys())
+    keys.append('context')
+    kls = namedtuple(name, keys)  # type: ignore
+    obj = kls(**context.nodes, context=context)
     return obj
 
 

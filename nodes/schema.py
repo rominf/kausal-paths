@@ -412,6 +412,17 @@ class NodeInterface(graphene.Interface):
         return [param for param in root.parameters.values() if param.is_visible]
 
     @staticmethod
+    def resolve_name(root: Node, info: GQLInstanceInfo) -> str | None:
+        obj: NodeConfig | None = (
+            NodeConfig.objects
+            .filter(instance__identifier=info.context.instance.id, identifier=root.id)
+            .first()
+        )
+        if obj is not None and obj.name_i18n:  # type: ignore
+            return obj.name
+        return str(root.name)
+
+    @staticmethod
     def resolve_short_description(root: Node, info: GQLInstanceInfo) -> Optional[str]:
         obj: NodeConfig | None = (
             NodeConfig.objects

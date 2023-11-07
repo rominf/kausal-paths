@@ -157,6 +157,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'wagtail.contrib.redirects.middleware.RedirectMiddleware',
+    'paths.middleware.RequestMiddleware',
     'admin_site.middleware.AuthExceptionMiddleware',
     'paths.middleware.AdminMiddleware',
 ]
@@ -348,6 +349,21 @@ WAGTAILSEARCH_BACKENDS = {
     }
 }
 
+WAGTAILADMIN_RICH_TEXT_EDITORS = {
+    'default': {"WIDGET": "wagtail.admin.rich_text.DraftailRichTextArea"},
+    'limited': {
+        "WIDGET": "wagtail.admin.rich_text.DraftailRichTextArea",
+        "OPTIONS": {
+            "features": ["bold", "italic", "ol", "ul", "link"]
+        },
+    },
+    'very-limited': {
+        "WIDGET": "wagtail.admin.rich_text.DraftailRichTextArea",
+        "OPTIONS": {
+            "features": ["bold", "italic"]
+        },
+    },
+}
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/3.1/howto/static-files/
@@ -356,9 +372,9 @@ STATICFILES_FINDERS = [
     'django.contrib.staticfiles.finders.AppDirectoriesFinder',
 ]
 
-# STATICFILES_DIRS = [
-#     os.path.join(PROJECT_DIR, 'static'),
-# ]
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, 'static_overrides'),
+]
 
 STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.ManifestStaticFilesStorage'
 
@@ -467,8 +483,15 @@ if env('CONFIGURE_LOGGING') and 'LOGGING' not in locals():
     from loguru import logger
     from .log_handler import LogHandler
 
-    logger.configure(handlers=[dict(sink=LogHandler(), format="{message}")])
-
+    extra = None
+    if DEBUG:
+        extra = dict(markup=True)
+    logger.configure(
+        handlers=[
+            dict(sink=LogHandler(), format="{message}"),
+        ],
+        extra=extra
+    )
     def level(level: Literal['DEBUG', 'INFO', 'WARNING']):
         return dict(
             handlers=['rich' if DEBUG else 'console'],

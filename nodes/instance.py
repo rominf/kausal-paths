@@ -91,6 +91,7 @@ class Instance:
     def __post_init__(self):
         self.logger: Logger = logger.bind(instance=self.id)
         self.modified_at: datetime | None = None
+        self.last_accessed_at: datetime | None = None
         self.lock = threading.Lock()
         if isinstance(self.features, dict):
             self.features = InstanceFeatures(**self.features)
@@ -718,7 +719,7 @@ class InstanceLoader:
             # attributes), but not under `instance` but under `pages` for a "page" whose `id' is `home`. It's a mess.
             **self._build_instance_args_from_home_page(),
         )
-        self.context.instance = self.instance
+        self.context.set_instance(self.instance)
         self.instance.yaml_file_path = self.yaml_file_path
 
         # Deprecated

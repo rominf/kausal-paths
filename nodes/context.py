@@ -1,4 +1,5 @@
 from __future__ import annotations
+from contextlib import ExitStack, contextmanager
 
 import inspect
 import os
@@ -10,7 +11,7 @@ import networkx as nx
 import rich
 from rich.tree import Tree
 
-from common import polars_ext  # noqa
+from common import base32_crockford
 from common import polars as pl  # noqa
 from common.cache import Cache
 from common.perf import PerfCounter
@@ -66,6 +67,7 @@ class Context:
     perf_context: PerfContext
     node_graph: nx.DiGraph
     baseline_values_generated: bool = False
+    obj_id: str
 
     def __init__(
         self, dataset_repo: dvc_pandas.Repository, target_year: int,
@@ -88,7 +90,6 @@ class Context:
         self.dataset_repo = dataset_repo
         self.dataset_repo_default_path = dataset_repo_default_path
         self.supported_parameter_types = discover_parameter_types()
-        self.cache = Cache(ureg=self.unit_registry, redis_url=os.getenv('REDIS_URL'))
         # will be set later
         self.instance = None  # type: ignore
         self.active_scenario = None  # type: ignore
@@ -98,6 +99,15 @@ class Context:
         self.dimensions = {}
         self.options = {}
         self.normalizations = {}
+        self.obj_id = base32_crockford.encode(id(self))
+
+    def set_instance(self, instance: Instance):
+        self.instance = instance
+        self.cache = Cache(
+            ureg=self.unit_registry, redis_url=os.getenv('REDIS_URL'),
+            log_context=dict(instance=self.instance.id, context=self.obj_id)
+        )
+        self.log = self.instance.logger.bind(context=self.obj_id)
 
     def finalize_nodes(self):
         """Finalize the node graph.
@@ -403,3 +413,12 @@ class Context:
 
     def warning(self, msg: Any, *args):
         self.instance.warning(msg, *args)
+
+    @contextmanager
+    def run(self):
+        with ExitStack() as stack:
+            stack.enter_context(self.cache)
+            stack.enter_context(self.perf_context)
+            if self.dataset_repo is not None:
+                stack.enter_context(self.dataset_repo.lock.lock)
+            yield

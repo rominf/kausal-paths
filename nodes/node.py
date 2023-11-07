@@ -224,6 +224,7 @@ class Node:
 
     logger: logging.Logger
     debug: bool = False
+    disable_cache: bool = False
     yaml_fn: str | None
     """YAML filename"""
     yaml_lc: Tuple[int, int] | None
@@ -923,9 +924,12 @@ class Node:
             level=PerfCounter.Level.INFO if self.debug else PerfCounter.Level.DEBUG
         )
         self.context.perf_context.node_start(self)
-
-        node_hash = self.calculate_hash().hex()
-        out = self.context.cache.get(node_hash)
+        if not self.disable_cache:
+            node_hash = self.calculate_hash().hex()
+            out = self.context.cache.get(node_hash)
+        else:
+            out = None
+            node_hash = ''
         pc.display("Cache %s" % ('hit' if out is not None else 'miss'))
         if out is None or self.context.skip_cache:
             try:
@@ -949,7 +953,7 @@ class Node:
 
         assert isinstance(out, ppl.PathsDataFrame)
 
-        if not cache_hit:
+        if not self.disable_cache and not cache_hit:
             self.context.cache.set(node_hash, out.copy())
 
         meta = out.get_meta()
