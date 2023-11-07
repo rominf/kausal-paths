@@ -3,7 +3,7 @@ from functools import cached_property
 
 import os
 import threading
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import TYPE_CHECKING, Optional, Sequence, Tuple, Union, cast
 from urllib.parse import urlparse
 import uuid
@@ -18,7 +18,8 @@ from django.utils.translation import get_language, override
 from django.utils.translation import gettext_lazy as _, gettext
 from modelcluster.models import ClusterableModel
 from modeltrans.fields import TranslationField
-from wagtail.fields import RichTextField
+from wagtail import blocks
+from wagtail.fields import RichTextField, StreamField
 from wagtail.models import Locale, Page, RevisionMixin
 from wagtail.models.sites import Site
 from wagtail.search import index
@@ -165,25 +166,43 @@ class InstanceConfig(PathsModel):
             self.log.info('Updating instance.other_languages to [%s]' % ', '.join(other_langs))
             self.other_languages = list(other_langs)
 
-    def _get_instance(self) -> Instance:
-        if hasattr(self, '_instance'):
-            return self._instance
+    def _get_instance_from_memory(self):
+        if self.identifier not in instance_cache:
+            return
+        instance: Instance = instance_cache[self.identifier]
+        assert instance.modified_at is not None
+        if self.modified_at > instance.modified_at:
+            return
 
-        if self.identifier in instance_cache:
-            instance: Instance = instance_cache[self.identifier]
-            if not self.nodes.exists():
-                return instance
-            latest_node_edit = self.nodes.all().order_by('-modified_at').values_list('modified_at', flat=True).first()
-            assert isinstance(latest_node_edit, datetime)
-            assert instance.modified_at is not None
-            if latest_node_edit <= instance.modified_at and self.modified_at <= instance.modified_at:
-                return instance
+        if not self.nodes.exists():
+            return instance
+        latest_node_edit = self.nodes.all().order_by('-modified_at').values_list('modified_at', flat=True).first()
+        assert isinstance(latest_node_edit, datetime)
+        more_recent_nodes = latest_node_edit > instance.modified_at
+        ic_recently_saved = self.modified_at > instance.modified_at
+        if more_recent_nodes or ic_recently_saved:
+            return
+        return instance
 
+    def _create_new_instance(self) -> Instance:
         config_fn = os.path.join(settings.BASE_DIR, 'configs', '%s.yaml' % self.identifier)
         loader = InstanceLoader.from_yaml(config_fn)
         instance = loader.instance
         self.update_instance_from_configs(instance)
         instance.modified_at = timezone.now()
+        instance.context.load_all_dvc_datasets()
+        return instance
+
+    def _get_instance(self) -> Instance:
+        if hasattr(self, '_instance'):
+            return self._instance
+
+        instance = self._get_instance_from_memory()
+        if instance:
+            setattr(self, '_instance', instance)
+            return instance
+
+        instance = self._create_new_instance()
         instance_cache[self.identifier] = instance
         self._instance = instance
         return instance
@@ -454,11 +473,22 @@ class NodeConfig(RevisionMixin, ClusterableModel, index.Indexed):
     order = models.PositiveIntegerField(
         null=True, blank=True, verbose_name=_('Order')
     )
+    goal = RichTextField(
+        null=True, blank=True, verbose_name=_('Goal'), editor='very-limited',
+        max_length=200,
+    ) # pyright: ignore
     short_description = RichTextField(
-        null=True, blank=True, verbose_name=_('Short description')
-    )
+        null=True, blank=True, verbose_name=_('Short description'), editor='limited',
+    ) # pyright: ignore
     description = RichTextField(
         null=True, blank=True, verbose_name=_('Description')
+    ) # -> StreamField
+    body = StreamField([
+        ('paragraph', blocks.RichTextBlock()),
+    ], use_json_field=True, blank=True)
+
+    indicator_node = models.ForeignKey(
+        'self', null=True, blank=True, on_delete=models.SET_NULL, related_name='indicates_nodes',
     )
 
     color = ColorField(max_length=20, null=True, blank=True)
@@ -469,7 +499,7 @@ class NodeConfig(RevisionMixin, ClusterableModel, index.Indexed):
     modified_at = models.DateTimeField(auto_now=True)
 
     i18n = TranslationField(
-        fields=('name', 'short_description', 'description'),
+        fields=('name', 'short_description', 'description', 'goal'),
         default_language_field='instance__primary_language',
     )  # pyright: ignore
 

@@ -136,9 +136,8 @@ if args.baseline:
     if profile is not None:
         profile.enable()
     pc.display('generating baseline values')
-    context.cache.start_run()
-    context.generate_baseline_values()
-    context.cache.end_run()
+    with context.run():
+        context.generate_baseline_values()
     pc.display('done')
     if profile is not None:
         profile.disable()
@@ -227,7 +226,6 @@ def round_quantity(e: Quantity):
 
 if args.print_action_efficiencies:
     def print_action_efficiencies():
-        context.cache.start_run()
         pc = PerfCounter("Action efficiencies")
         for aep in context.action_efficiency_pairs:
             title = '%s / %s' % (aep.cost_node.id, aep.impact_node.id)
@@ -255,10 +253,7 @@ if args.print_action_efficiencies:
                 table.add_row(row[0], str(row[1]))
             console.print(table)
 
-        context.cache.end_run()
-
     def print_impacts():
-        context.cache.start_run()
         pc = PerfCounter("Action impacts")
         for outcome_node in context.get_outcome_nodes():
             title = outcome_node.id
@@ -299,10 +294,11 @@ if args.print_action_efficiencies:
     if profile is not None:
         profile.enable()
 
-    if context.action_efficiency_pairs:
-        print_action_efficiencies()
-    else:
-        print_impacts()
+    with context.run():
+        if context.action_efficiency_pairs:
+            print_action_efficiencies()
+        else:
+            print_impacts()
     if profile is not None:
         profile.disable()
         profile.dump_stats('action_efficiencies_profile.out')

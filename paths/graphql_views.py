@@ -1,5 +1,6 @@
 import hashlib
 import json
+from django.http import HttpRequest
 from loguru import logger
 from contextlib import AbstractContextManager, ExitStack, contextmanager
 from typing import Any, Optional, cast
@@ -175,11 +176,7 @@ class PathsExecutionContext(ExecutionContext):
         with ExitStack() as stack:
             stack.enter_context(self.activate_language(ic, operation))
             stack.enter_context(instance.lock)
-            if context.dataset_repo is not None:
-                stack.enter_context(context.dataset_repo.lock.lock)
-            stack.enter_context(context.perf_context)
-            stack.enter_context(context.cache)
-
+            stack.enter_context(context.run())
             context.generate_baseline_values()
             self.activate_instance(instance)
 
@@ -201,39 +198,55 @@ class PathsExecutionContext(ExecutionContext):
 
 
 class PathsGraphQLView(GraphQLView):
-    graphiql_version = "2.4.1"
-    graphiql_sri = "sha256-s+f7CFAPSUIygFnRC2nfoiEKd3liCUy+snSdYFAoLUc="
-    graphiql_css_sri = "sha256-88yn8FJMyGboGs4Bj+Pbb3kWOWXo7jmb+XCRHE+282k="
+    graphiql_version = "3.0.9"
+    graphiql_sri = "sha256-i8HFOsDB6KaRVstG2LSibODRlHNNA1XLKLnDl7TIAZY="
+    graphiql_css_sri = "sha256-wTzfn13a+pLMB5rMeysPPR1hO7x0SwSeQI+cnw7VdbE="
+    graphiql_plugin_explorer_version = "1.0.2"
+    graphiql_plugin_explorer_sri = "sha256-CD435QHT45IKYOYnuCGRrwVgCRJNzoKjMuisdNtso4s="
+    graphiql_plugin_explorer_css_sri = "sha256-G6RZ0ey9eHIvQt0w+zQYVh4Rq1nNneislHMWMykzbLs="
+
     execution_context_class = PathsExecutionContext
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+    def log_reg(self, level: str, operation_name: str | None, msg, *args, depth: int = 0, **kwargs):
+        logger.opt(depth=1 + depth).log(level, 'GQL request [magenta]%s[/]: %s' % (operation_name, msg), *args, **kwargs)
+
     def json_encode(self, request, d, pretty=False):
         if not (self.pretty or pretty) and not request.GET.get("pretty"):
-            return orjson.dumps(d)
-        return orjson.dumps(d, option=orjson.OPT_INDENT_2 | orjson.OPT_SORT_KEYS)
+            ret = orjson.dumps(d)
+        ret = orjson.dumps(d, option=orjson.OPT_INDENT_2 | orjson.OPT_SORT_KEYS)
+        logger.debug('GQL response for {} was {} bytes', getattr(request, '_graphql_operation_name', None), len(ret))
+        return ret
+
+    def get_ic_from_headers(self, request: HttpRequest):
+        identifier = request.headers.get('x-paths-instance-identifier')
+        hostname = request.headers.get('x-paths-instance-hostname')
+        if not identifier:
+            return None
+        return InstanceConfig.objects.filter(identifier=identifier).first()
 
     def get_cache_key(
         self, request: GQLInstanceContext, query: str | None, variables: dict | None,
         operation_name: str | None
     ):
-        identifier = request.headers.get('x-paths-instance-identifier')
-        hostname = request.headers.get('x-paths-instance-hostname')
-        if not identifier:
-            return None
+        def log_reason(reason: str):
+            self.log_reg('DEBUG', operation_name, 'request not cached: [red]{}[/]', reason, depth=1)
         if not query:
             return None
-
         if request.user.is_authenticated:
+            log_reason('user authenticated')
             return None
 
-        session_key = SessionStorage.get_cache_key(request.session, identifier)
-        if session_key is None:
-            return None
-
-        ic = InstanceConfig.objects.filter(identifier=identifier).first()
+        ic = self.get_ic_from_headers(request)
         if ic is None:
+            log_reason('no instance config')
+            return None
+
+        session_key = SessionStorage.get_cache_key(request.session, ic.identifier)
+        if session_key is None:
+            log_reason('user session has custom parameters')
             return None
 
         m = hashlib.sha1()
@@ -261,8 +274,13 @@ class PathsGraphQLView(GraphQLView):
         operation_name: str | None, *args, **kwargs
     ):
         request._referer = self.request.META.get('HTTP_REFERER')
+        setattr(request, '_graphql_operation_name', operation_name)
+
+        def log(level: str, msg: str, *args, depth: int = 0, **kwargs):
+            self.log_reg(level, operation_name, msg, *args, depth=depth + 1, **kwargs)
+
         transaction: Transaction | None = sentry_sdk.Hub.current.scope.transaction
-        logger.info('GraphQL request %s from %s' % (operation_name, request._referer))
+        log('INFO', 'referrer: {}', request._referer)
         if query is not None:
             query = query.strip()
         if settings.LOG_GRAPHQL_QUERIES and query:
@@ -295,20 +313,29 @@ class PathsGraphQLView(GraphQLView):
                 result = None
                 if cache_key is not None:
                     result = self.get_from_cache(cache_key)
-                    logger.debug('Cache key %s, %s' % (cache_key, "got result" if result is not None else "no cache"))
-                else:
-                    logger.debug('Not caching request')
+                    log('DEBUG', 'Cache key %s, %s' % (cache_key, "[green]got result[/]" if result is not None else "[orange]no hit[/]"))
                 if result is None:
                     result = super().execute_graphql_request(
                         request, data, query, variables, operation_name, *args, **kwargs
                     )
-                    if result and not result.errors and cache_key and not getattr(request, 'graphene_no_cache', False):
-                        logger.debug('Storing to cache: %s' % cache_key)
+                    if cache_key:
+                        def log_reason(msg, *args, okay=False, **kwargs):
+                            level = 'DEBUG' if okay else 'WARNING'
+                            log(level, 'not caching response: %s' % msg, *args, **kwargs)
+                        if not result:
+                            log_reason('[red]no result[/]')
+                            cache_key = None
+                        elif result.errors:
+                            log_reason('[red]query processing errors[/]')
+                            cache_key = None
+                        elif getattr(request, 'graphene_no_cache', False):
+                            log_reason('not cacheable request')
+                            cache_key = None
+                    if cache_key:
+                        log('DEBUG', 'Storing to cache: %s' % cache_key)
                         self.store_to_cache(cache_key, result)
-                    else:
-                        logger.debug('Not storing to cache: %s' % cache_key)
                 query_time = pc.measure()
-                logger.debug("GQL response took %.1f ms" % query_time)
+                self.log_reg("INFO", "response took {} ms", query_time)
 
             # If 'invalid' is set, it's a bad request
             if result and result.errors:

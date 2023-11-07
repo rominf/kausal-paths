@@ -2,7 +2,7 @@ from __future__ import annotations
 from contextlib import AbstractContextManager
 from types import TracebackType
 
-from typing import Any, Dict, Optional, Union, Tuple
+from typing import TYPE_CHECKING, Any, Dict, Optional, Union, Tuple, cast
 import pickle
 
 import pandas as pd
@@ -10,8 +10,9 @@ import polars as pl
 import pint_pandas
 from pint import UnitRegistry
 import redis
+from loguru import logger
 
-from common import polars as ppl
+from common import base32_crockford, polars as ppl
 from common.perf import PerfCounter
 
 
@@ -78,18 +79,27 @@ class Cache(AbstractContextManager):
     local_cache: Dict[str, bytes]
     run_cache: Dict[str, Any] | None
     run_pipe: list[Tuple[str, Any]] | None
+    run_req_count: int | None
 
-    def __init__(self, ureg: UnitRegistry, redis_url: Optional[str] = None):
+    def __init__(self, ureg: UnitRegistry, redis_url: Optional[str] = None, log_context: dict[str, str] | None = None):
         if redis_url is not None:
             self.client = redis.Redis.from_url(redis_url)
         else:
             self.client = None
             self.local_cache = {}
-        self.prefix = 'kausal-paths'
+        self.prefix = 'kausal-paths-model'
         self.timeout = 30 * 60
         self.ureg = ureg
         self.run_cache = None
         self.run_pipe = None
+        self.run_req_count = None
+        self.log = logger.bind(**(log_context or {}))
+        self.obj_id = base32_crockford.encode(id(self))
+        self.pc = PerfCounter('cache {}'.format(self.obj_id))
+        self.log.debug('[{}] Cache initialized', self.obj_id)
+
+    def __del__(self):
+        self.log.debug('[{}] Cache destroyed', self.obj_id)
 
     def __enter__(self):
         self.start_run()
@@ -102,12 +112,16 @@ class Cache(AbstractContextManager):
         return None
 
     def start_run(self):
+        self.pc.measure()
+        self.log.debug('[{}] Start execution run', self.obj_id)
         self.run_cache = {}
+        self.run_req_count = 0
         if self.client is not None:
             self.run_pipe = []
 
     def end_run(self):
         self.run_cache = None
+        comp_time = self.pc.measure()
 
         if self.run_pipe:
             pc = PerfCounter('end run')
@@ -116,11 +130,12 @@ class Cache(AbstractContextManager):
             else:
                 pipe = None
 
-            pc.display('dumping %d objects' % len(self.run_pipe))
+            nr_new_objs = len(self.run_pipe)
+            pc.display('dumping %d objects' % nr_new_objs)
             for key, obj in self.run_pipe:
                 data = self.dump_object(obj)
                 if pipe is not None:
-                    pipe.setex(key, self.timeout, data)
+                    pipe.set(key, data, ex=self.timeout)
                 else:
                     self.local_cache[key] = data
             pc.display('dumped')
@@ -128,6 +143,13 @@ class Cache(AbstractContextManager):
             if pipe is not None:
                 pipe.execute()
                 pc.display('executed')
+        else:
+            nr_new_objs = 0
+
+        self.log.debug(
+            '[{}] End execution run (computation {:.2f} ms, {} reqs; caching {} new objects took {:.2f} ms)',
+            self.obj_id, comp_time, self.run_req_count, nr_new_objs, self.pc.measure()
+        )
 
         self.run_pipe = None
 
@@ -149,6 +171,8 @@ class Cache(AbstractContextManager):
 
     def get(self, key: str) -> Any:
         full_key = '%s:%s' % (self.prefix, key)
+        if self.run_req_count is not None:
+            self.run_req_count += 1
         if self.run_cache is not None and full_key in self.run_cache:
             obj = self.run_cache[full_key]
             if isinstance(obj, (pd.DataFrame, ppl.PathsDataFrame)):
@@ -156,7 +180,7 @@ class Cache(AbstractContextManager):
             return obj
 
         if self.client:
-            data = self.client.get(full_key)
+            data = cast(bytes | None, self.client.get(full_key))
         else:
             data = self.local_cache.get(full_key)
         if data is None:

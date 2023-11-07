@@ -9,8 +9,6 @@ from rich.text import Text, TextType
 from rich.traceback import Traceback
 from rich.containers import Renderables
 
-from loguru import logger
-
 
 if TYPE_CHECKING:
     from rich.console import Console, ConsoleRenderable, RenderableType
@@ -111,8 +109,15 @@ class LogHandler(RichHandler):
 
     def render_message(self, record: LogRecord, message: str) -> ConsoleRenderable:
         extra: dict[str, Any] = getattr(record, 'extra', {})
-        if 'instance' in extra:
+        markup = extra.pop('markup', False)
+        if markup:
+            setattr(record, 'markup', True)
+        if extra.get('context'):
+            message = '[ctx %s] %s' % (extra['context'], message)
+        if extra.get('instance'):
             message = '[%s] %s' % (extra['instance'], message)
+        if 'session' in extra:
+            message = '<%s> %s' % (extra['session'], message)
         ret = super().render_message(record, message)
         return ret
 
