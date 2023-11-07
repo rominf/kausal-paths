@@ -69,6 +69,7 @@ exclude = [
     '^local_settings\.py',
 ]
 check_untyped_defs = true
+new_type_inference = true
 
 
 [[tool.mypy.overrides]]

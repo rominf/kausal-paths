@@ -1,8 +1,8 @@
 psycopg2-binary
-pandas<2.0
+pandas
 python-dotenv
-wagtail>=5.0rc1
-django<4.2
+wagtail<5.2
+django
 django-environ
 django-cors-headers
 sentry_sdk
@@ -11,7 +11,7 @@ django-extensions
 dvc-pandas
 ipython
 numba>=0.57.0rc1
-pint<0.21
+pint>=0.22
 pint-pandas
 colored
 factory-boy

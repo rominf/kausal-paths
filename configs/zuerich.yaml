@@ -43,6 +43,8 @@ features:
 terms:
   enabled_label_de: Wird umgesetzt
   enabled_label_en: Is implemented
+  action_group_label_de: Bereich
+  action_group_label_en: Group
 
 action_groups:
 # Handlungsfeld

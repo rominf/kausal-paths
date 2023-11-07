@@ -145,7 +145,7 @@ class ShiftAction(ActionNode):
         if len(dupes):
             raise NodeError(self, "Duplicate rows")
         df = df.groupby(YEAR_COLUMN).agg([pl.first(col) for col in ('Source', *dest_cols)]).sort(YEAR_COLUMN)
-        df = df.interpolate().fill_null(0)
+        df = df.with_columns(pl.col(col).interpolate().fill_null(0.0) for col in ('Source', *dest_cols))
 
         value_cols = [col for col in df.columns if col != YEAR_COLUMN]
         if self.is_enabled():
