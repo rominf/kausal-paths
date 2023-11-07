@@ -1660,7 +1660,7 @@ nodes:
   - id: public_transport_emissions
     from_dimensions:
     - id: vehicle_type
-      groups: [buses, trolleybuses, coaches, tram, rail_passenger, small_railways]
+      groups: [buses, trolleybuses, tram, rail_passenger, small_railways]
     to_dimensions:
     - id: vehicle_type
   - id: goods_transport_emissions
@@ -1672,7 +1672,7 @@ nodes:
   - id: other_transport_emissions
     from_dimensions:
     - id: vehicle_type
-      groups: [cars, motorbikes, buses, trolleybuses, coaches, tram, rail_passenger,
+      groups: [cars, motorbikes, buses, trolleybuses, tram, rail_passenger,
         small_railways, lorries, vans, rail_goods]
       exclude: true
     to_dimensions:
