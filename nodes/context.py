@@ -13,6 +13,7 @@ from rich.tree import Tree
 
 from common import base32_crockford
 from common import polars as pl  # noqa
+from common import polars_ext  # noqa
 from common.cache import Cache
 from common.perf import PerfCounter
 from params import Parameter

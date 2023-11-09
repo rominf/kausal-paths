@@ -3098,8 +3098,8 @@ actions:
           heating_system: district_heat
       amounts:
       - year: 2023
-        source_amount: -0.5
-        dest_amounts: [1]
+        source_amount: -0.1
+        dest_amounts: [100]
 
     - source:
         categories:
@@ -3109,7 +3109,7 @@ actions:
           heating_system: district_heat
       amounts:
       - year: 2023
-        source_amount: -1.25
+        source_amount: -0.1
         dest_amounts: [1]
 
 - id: fossil_fuel_heater_to_heat_pumps
@@ -3137,7 +3137,7 @@ actions:
           heating_system: heat_pumps
       amounts:
       - year: 2023
-        source_amount: -0.5
+        source_amount: -0.1
         dest_amounts: [1]
 
     - source:
@@ -3148,7 +3148,7 @@ actions:
           heating_system: heat_pumps
       amounts:
       - year: 2023
-        source_amount: -1.25
+        source_amount: -0.1
         dest_amounts: [1]
 
 - id: fossil_fuel_heater_to_other
@@ -3179,7 +3179,7 @@ actions:
       amounts:
       - year: 2023
         source_amount: -0.1
-        dest_amounts: [10, 1]
+        dest_amounts: [100, 100]
 
     - source:
         categories:
@@ -3191,8 +3191,8 @@ actions:
           heating_system: solar_collectors
       amounts:
       - year: 2023
-        source_amount: -0.13
-        dest_amounts: [10, 1]
+        source_amount: -0.1
+        dest_amounts: [100, 100]
 
 - id: district_heat_decarbonisation
   name_de: Dekarbonisierung der thermischen Netze
