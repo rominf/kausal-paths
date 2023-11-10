@@ -1674,8 +1674,8 @@ nodes:
   - id: other_transport_emissions
     from_dimensions:
     - id: vehicle_type
-      groups: [cars, motorbikes, buses, trolleybuses, tram, rail_passenger,
-        small_railways, lorries, vans, rail_goods]
+      groups: [cars, motorbikes, buses, trolleybuses, tram, rail_passenger, small_railways,
+        lorries, vans, rail_goods]
       exclude: true
     to_dimensions:
     - id: vehicle_type
@@ -3097,10 +3097,14 @@ actions:
       - categories:
           heating_system: district_heat
       amounts:
-      - year: 2023
-        source_amount: -0.1
-        dest_amounts: [100]
-
+      - {year: 2023, source_amount: -0.525, dest_amounts: [100]}
+      - {year: 2025, source_amount: -0.525, dest_amounts: [100]}
+      - {year: 2026, source_amount: -0.503, dest_amounts: [100]}
+      - {year: 2030, source_amount: -0.503, dest_amounts: [100]}
+      - {year: 2031, source_amount: -0.461, dest_amounts: [100]}
+      - {year: 2035, source_amount: -0.461, dest_amounts: [100]}
+      - {year: 2036, source_amount: -0.394, dest_amounts: [100]}
+      - {year: 2040, source_amount: -0.394, dest_amounts: [100]}
     - source:
         categories:
           heating_system: natural_gas
@@ -3108,10 +3112,14 @@ actions:
       - categories:
           heating_system: district_heat
       amounts:
-      - year: 2023
-        source_amount: -0.1
-        dest_amounts: [1]
-
+      - {year: 2023, source_amount: -1.259, dest_amounts: [100]}
+      - {year: 2025, source_amount: -1.259, dest_amounts: [100]}
+      - {year: 2026, source_amount: -1.297, dest_amounts: [100]}
+      - {year: 2030, source_amount: -1.297, dest_amounts: [100]}
+      - {year: 2031, source_amount: -1.14, dest_amounts: [100]}
+      - {year: 2035, source_amount: -1.14, dest_amounts: [100]}
+      - {year: 2036, source_amount: -1.206, dest_amounts: [100]}
+      - {year: 2040, source_amount: -1.206, dest_amounts: [100]}
 - id: fossil_fuel_heater_to_heat_pumps
   name_en: Replacement of fossil fuel heaters with heat pumps
   name_de: Heizungsersatz durch Wärmepumpen
@@ -3136,10 +3144,14 @@ actions:
       - categories:
           heating_system: heat_pumps
       amounts:
-      - year: 2023
-        source_amount: -0.1
-        dest_amounts: [1]
-
+      - {year: 2023, source_amount: -0.553, dest_amounts: [100]}
+      - {year: 2025, source_amount: -0.553, dest_amounts: [100]}
+      - {year: 2026, source_amount: -0.539, dest_amounts: [100]}
+      - {year: 2030, source_amount: -0.539, dest_amounts: [100]}
+      - {year: 2031, source_amount: -0.576, dest_amounts: [100]}
+      - {year: 2035, source_amount: -0.576, dest_amounts: [100]}
+      - {year: 2036, source_amount: -0.407, dest_amounts: [100]}
+      - {year: 2040, source_amount: -0.407, dest_amounts: [100]}
     - source:
         categories:
           heating_system: natural_gas
@@ -3147,10 +3159,14 @@ actions:
       - categories:
           heating_system: heat_pumps
       amounts:
-      - year: 2023
-        source_amount: -0.1
-        dest_amounts: [1]
-
+      - {year: 2023, source_amount: -1.18, dest_amounts: [100]}
+      - {year: 2025, source_amount: -1.18, dest_amounts: [100]}
+      - {year: 2026, source_amount: -1.261, dest_amounts: [100]}
+      - {year: 2030, source_amount: -1.261, dest_amounts: [100]}
+      - {year: 2031, source_amount: -1.224, dest_amounts: [100]}
+      - {year: 2035, source_amount: -1.224, dest_amounts: [100]}
+      - {year: 2036, source_amount: -1.193, dest_amounts: [100]}
+      - {year: 2040, source_amount: -1.193, dest_amounts: [100]}
 - id: fossil_fuel_heater_to_other
   name_en: Replacement of fossil fuel heaters with other heaters
   name_de: Heizungsersatz durch übrige Systeme
@@ -3177,10 +3193,14 @@ actions:
       - categories:
           heating_system: solar_collectors
       amounts:
-      - year: 2023
-        source_amount: -0.1
-        dest_amounts: [100, 100]
-
+      - {year: 2023, source_amount: -0.072, dest_amounts: [60.8, 39.2]}
+      - {year: 2025, source_amount: -0.072, dest_amounts: [60.8, 39.2]}
+      - {year: 2026, source_amount: -0.058, dest_amounts: [60.8, 39.2]}
+      - {year: 2030, source_amount: -0.058, dest_amounts: [60.8, 39.2]}
+      - {year: 2031, source_amount: -0.063, dest_amounts: [60.8, 39.2]}
+      - {year: 2035, source_amount: -0.063, dest_amounts: [60.8, 39.2]}
+      - {year: 2036, source_amount: -0.12, dest_amounts: [60.8, 39.2]}
+      - {year: 2040, source_amount: -0.12, dest_amounts: [60.8, 39.2]}
     - source:
         categories:
           heating_system: natural_gas
@@ -3190,10 +3210,14 @@ actions:
       - categories:
           heating_system: solar_collectors
       amounts:
-      - year: 2023
-        source_amount: -0.1
-        dest_amounts: [100, 100]
-
+      - {year: 2023, source_amount: -0.001, dest_amounts: [58.7, 41.3]}
+      - {year: 2025, source_amount: -0.001, dest_amounts: [58.7, 41.3]}
+      - {year: 2026, source_amount: -0.042, dest_amounts: [58.7, 41.3]}
+      - {year: 2030, source_amount: -0.042, dest_amounts: [58.7, 41.3]}
+      - {year: 2031, source_amount: -0.036, dest_amounts: [58.7, 41.3]}
+      - {year: 2035, source_amount: -0.036, dest_amounts: [58.7, 41.3]}
+      - {year: 2036, source_amount: 0, dest_amounts: [58.7, 41.3]}
+      - {year: 2040, source_amount: 0, dest_amounts: [58.7, 41.3]}
 - id: district_heat_decarbonisation
   name_de: Dekarbonisierung der thermischen Netze
   description_de: 'Ziel bis 2040: 100 Prozent der Energie der thermischen Netze sind
