@@ -29,17 +29,16 @@ nodes:
   description: 'Data sources:<ul><li>Model inputs & assumptions, F250. Size of building stock. 
     </li><li>Model inputs & assumptions, F519. Rate of demolition and new construction.</li><li>Model inputs & assumptions, F257. Retrofitted area %.</li></ul>
     Calculations: The logic is that the floor area per inhabitant stays constant. Amount of construction is a fixed fraction of existing building stock and the difference between building stock increase and construction is assumed to be demolished. So, logically, construction must be greater than or equal to population growth.'
-  type: gpc.DatasetNode2
+  type: gpc.DatasetNode
   quantity: floor_area
   unit: km**2
   input_dimensions: [building_energy_class]
   output_dimensions: [building_energy_class]
   input_datasets:
-  - id: nzc/defaults/buildings
+  - id: nzc/defaults
     forecast_from: 2023
   params:
-  - id: gpc_sector
-    value: size of building stock
+    gpc_sector: size of building stock
 
 - id: projected_building_stock
   name: Projected building stock
@@ -58,33 +57,30 @@ nodes:
 
 - id: new_building_shares
   name: New building shares
-  type: gpc.DatasetNode2
+  type: gpc.DatasetNode
   quantity: fraction
   unit: dimensionless
   input_dimensions: [building_energy_class]
   output_dimensions: [building_energy_class]
   input_datasets:
-  - id: nzc/defaults/buildings
+  - id: nzc/defaults
     forecast_from: 2023
   params:
-  - id: gpc_sector
-    value: new building shares
-  - id: inventory_only
-    value: true
+    gpc_sector: new building shares
+    inventory_only: true
 
 - id: demolition_rate
   name: Demolition rate
-  type: gpc.DatasetNode2
+  type: gpc.DatasetNode
   quantity: fraction
   unit: dimensionless
   input_dimensions: [building_energy_class]
   output_dimensions: [building_energy_class]
   input_datasets:
-  - id: nzc/defaults/assumptions
+  - id: nzc/defaults
     forecast_from: 2023
   params:
-  - id: gpc_sector
-    value: Demolition rate existing buildings
+    gpc_sector: Demolition rate existing buildings
 
 - id: demolished_building_stock
   name: Demolished building stock
@@ -146,29 +142,27 @@ nodes:
 - id: old_building_renovation_rate
   name: Old building renovation rate
   description: Shifts building stock from non-renovated to minor or agressively renovated stock. The effect is cumulative, i.e. the renovated stock stays permanently in the new category and thus the stock accumulates to renovated categories.
-  type: gpc.DatasetNode2
+  type: gpc.DatasetNode
   quantity: fraction
   unit: dimensionless
   input_datasets:
-  - id: nzc/defaults/buildings
+  - id: nzc/defaults
     forecast_from: 2023
   params:
-  - id: gpc_sector
-    value: renovation rate (building envelope)
+    gpc_sector: renovation rate (building envelope)
 
 - id: renovation_intensity
   name: Renovation intensity
-  type: gpc.DatasetNode2
+  type: gpc.DatasetNode
   quantity: fraction
   unit: dimensionless
   input_dimensions: [building_energy_class]
   output_dimensions: [building_energy_class]
   input_datasets:
-  - id: nzc/defaults/actions
+  - id: nzc/defaults
     forecast_from: 2023
   params:
-  - id: gpc_sector
-    value: renovation intensity  # FIXME get correct data from renovation intensity baseline
+    gpc_sector: renovation intensity  # FIXME get correct data from renovation intensity baseline
 
 - id: renovated_building_stock
   name: Renovated building stock
@@ -193,31 +187,29 @@ nodes:
 
 - id: energy_use_intensity_data  # FIXME Calculate from relative changes, not data
   name: Energy use intensity data for heating
-  type: gpc.DatasetNode2
+  type: gpc.DatasetNode
   quantity: energy_factor
   unit: kWh/m**2/a
   input_dimensions: [building_energy_class]
   output_dimensions: [building_energy_class]
   input_datasets:
-  - id: nzc/defaults/buildings
+  - id: nzc/defaults
     forecast_from: 2023
   params:
-  - id: gpc_sector
-    value: energy use intensity
+    gpc_sector: energy use intensity
 
 - id: energy_use_intensity_relative_old
   name: Relative energy use intensity of existing building classes
-  type: gpc.DatasetNode2
+  type: gpc.DatasetNode
   quantity: fraction
   unit: dimensionless
   input_dimensions: [building_energy_class]
   output_dimensions: [building_energy_class]
   input_datasets:
-  - id: nzc/defaults/assumptions
+  - id: nzc/defaults
     forecast_from: 2023
   params:
-  - id: gpc_sector
-    value: Energy efficiency improvements from building renovations
+    gpc_sector: Energy efficiency improvements from building renovations
 
 - id: energy_use_intensity_old
   name: Energy use intensity of existing buildings
@@ -239,17 +231,16 @@ nodes:
 
 - id: energy_use_intensity_change_new
   name: Energy use intensity change for new buildings
-  type: gpc.DatasetNode2
+  type: gpc.DatasetNode
   quantity: fraction
   unit: dimensionless
   input_dimensions: [building_energy_class]
   output_dimensions: [building_energy_class]
   input_datasets:
-  - id: nzc/defaults/actions  # FIXME This could be zero by default and be changed by action
+  - id: nzc/defaults  # FIXME This could be zero by default and be changed by action
     forecast_from: 2023
   params:
-  - id: gpc_sector
-    value: improvement compared with new standard  # FIXME update defaults/actions
+    gpc_sector: improvement compared with new standard  # FIXME update defaults/actions
 
 - id: energy_use_intensity_new
   name: Energy use intensity for heating of new buildings
@@ -278,17 +269,16 @@ nodes:
 - id: building_heating_type_share
   name: Building heating type share
   description: Assumes 1 % district and 99 % local heating. Data comes from the user.
-  type: gpc.DatasetNode2
+  type: gpc.DatasetNode
   quantity: fraction
   unit: dimensionless
   input_dimensions: [heating_type, scope]
   output_dimensions: [heating_type, scope]
   input_datasets:
-  - id: nzc/defaults/buildings
+  - id: nzc/defaults
     forecast_from: 2023
   params:
-  - id: gpc_sector
-    value: building heating shares
+    gpc_sector: building heating shares
 
 - id: building_heat_energy_use
   name: Building heat energy use
@@ -313,17 +303,16 @@ nodes:
 - id: heating_emission_factor
   name: Heating emission factor
   description: Emission factor for building heating
-  type: gpc.DatasetNode2
+  type: gpc.DatasetNode
   quantity: emission_factor
   unit: g/kWh
   input_dimensions: [pollutant, heating_type]
   output_dimensions: [pollutant, heating_type]
   input_datasets:
-  - id: nzc/defaults/buildings
+  - id: nzc/defaults
     forecast_from: 2023
   params:
-  - id: gpc_sector
-    value: heat emission factor
+    gpc_sector: heat emission factor
 
 - id: building_heating_emissions
   name: Building heating emissions
@@ -359,17 +348,16 @@ nodes:
 
 - id: new_building_current_unit_price
   name: Building current unit price
-  type: gpc.DatasetNode2
+  type: gpc.DatasetNode
   quantity: unit_price
   unit: EUR/m**2
   input_dimensions: [building_energy_class]
   output_dimensions: [building_energy_class]
   input_datasets:
-  - id: nzc/defaults/assumptions
+  - id: nzc/defaults
     forecast_from: 2023
   params:
-  - id: gpc_sector
-    value: Building costs - new buildings
+    gpc_sector: Building costs - new buildings
 
 - id: new_building_unit_price
   name: New building unit price
@@ -381,23 +369,22 @@ nodes:
   input_nodes:
   - id: new_building_current_unit_price
   params:
-  - id: annual_change  # FIXME from nzc/defaults/assumptions Cost improvements - new buildings
+  - id: annual_change  # FIXME from nzc/defaults Cost improvements - new buildings
     value: -1.024671139
     unit: '%'
 
 - id: new_building_cost_shares
   name: Building current cost_shares
-  type: gpc.DatasetNode2
+  type: gpc.DatasetNode
   quantity: fraction
   unit: dimensionless
   input_dimensions: [stakeholder, cost_type]
   output_dimensions: [stakeholder, cost_type]
   input_datasets:
-  - id: nzc/defaults/stakeholders
+  - id: nzc/defaults
     forecast_from: 2023
   params:
-  - id: gpc_sector
-    value: investment costs in new buildings
+    gpc_sector: investment costs in new buildings
 #building renovation investments
 
 
@@ -424,94 +411,89 @@ nodes:
 
 - id: consumer_electricity_intensity_baseline
   name: Electricity use intensity for lighting & appliances
-  type: gpc.DatasetNode2
+  type: gpc.DatasetNode
   quantity: energy_factor
   unit: kWh/m**2/a
   input_dimensions: [energy_carrier]
   output_dimensions: [energy_carrier]
   input_datasets:
-  - id: nzc/defaults/buildings
+  - id: nzc/defaults
     forecast_from: 2023
   params:
-  - id: gpc_sector
-    value: consumer electricity use
+    gpc_sector: consumer electricity use
 
 - id: efficient_appliances_rate
   name: Efficient appliances rate
-  type: gpc.DatasetNode2
+  type: gpc.DatasetNode
   quantity: fraction
   unit: dimensionless  # FIXME 1/a
-#  input_dimensions: [building_energy_class]  # FIXME
-#  output_dimensions: [building_energy_class]
+  input_dimensions: [building_energy_class]
+  output_dimensions: [building_energy_class]
   input_datasets:
-  - id: nzc/defaults/actions
+  - id: nzc/defaults
     forecast_from: 2023
   params:
-  - id: gpc_sector
-    value: efficient appliances rate
+    gpc_sector: efficient appliances rate
 
 - id: efficiency_programme_shares
   name: Efficiency programme shares
   description: FIXME The excel logic of action 3.3 changes 1) the fraction of aggressive improvement in energy efficienay, 2) the amount of electricity contumper per squaremetre after improvement and 3) the cost of Improvement. In constrast, it does NOT affect the floor area renovated (old buildings) or built (new buildings), just the fraction of minor and aggressive shares. How should we implement this? The energy improvement can be adjusted by the user, as well as the unit price of improvement. 
-  type: gpc.DatasetNode2
+  type: gpc.DatasetNode
   quantity: fraction
   unit: dimensionless
   input_dimensions: [efficiency_programme, energy_carrier]
   output_dimensions: [efficiency_programme, energy_carrier]
   input_datasets:
-  - id: nzc/defaults/actions
+  - id: nzc/defaults
     forecast_from: 2023
   params:
-  - id: gpc_sector
-    value: efficiency programme shares
+    gpc_sector: efficiency programme shares
 
 - id: efficiency_improved_buildings
   name: Efficiency improved buildings
   type: simple.MultiplicativeNode
   quantity: floor_area
   unit: km**2
-  input_dimensions: [efficiency_programme, energy_carrier]
-  output_dimensions: [efficiency_programme, energy_carrier]
+  input_dimensions: [efficiency_programme, energy_carrier, building_energy_class]
+  output_dimensions: [efficiency_programme, energy_carrier, building_energy_class]
   input_nodes:
   - id: building_stock
     tags: [non_additive]
-    from_dimensions:
+    to_dimensions:
     - id: building_energy_class
-      flatten: true  # FIXME Do not flatten
-    to_dimensions: []
   - id: efficient_appliances_rate
-#    from_dimensions:
-#    - id: building_energy_class
-    to_dimensions: []  # FIXME
+    to_dimensions:
+    - id: building_energy_class
   - id: efficiency_programme_shares
+    to_dimensions:
+    - id: efficiency_programme
+    - id: energy_carrier
 
 - id: reduced_electricity_need
   name: Reduced electricity need
-  type: gpc.DatasetNode2
+  type: gpc.DatasetNode
   quantity: fraction
   unit: dimensionless
   input_dimensions: [efficiency_programme, energy_carrier]
   output_dimensions: [efficiency_programme, energy_carrier]
   input_datasets:
-  - id: nzc/defaults/assumptions
+  - id: nzc/defaults
     forecast_from: 2023
   params:
-  - id: gpc_sector
-    value: Reduced electricity need with appliances & lighting renovations ## FIXME Reduced electricity need with appliances; after updating the dataset
+    gpc_sector: Reduced electricity need with appliances & lighting renovations ## FIXME Reduced electricity need with appliances; after updating the dataset
 
 - id: efficiency_programme_current_unit_price
   name: Efficiency programme current unit price
-  type: gpc.DatasetNode2
+  type: gpc.DatasetNode
   quantity: unit_price
   unit: EUR/m**2
   input_dimensions: [efficiency_programme, energy_carrier]
   output_dimensions: [efficiency_programme, energy_carrier]
   input_datasets:
-  - id: nzc/defaults/assumptions
+  - id: nzc/defaults
     forecast_from: 2023
   params:
-  - id: gpc_sector
-    value: Cost of efficiency programme per m2
+    gpc_sector: Cost of efficiency programme per m2
 
 - id: efficiency_programme_unit_price
   name: Efficiency programme unit price
@@ -523,7 +505,7 @@ nodes:
   input_nodes:
   - id: efficiency_programme_current_unit_price
   params:
-  - id: annual_change  # FIXME from nzc/defaults/assumptions Cost improvements of efficiency programme
+  - id: annual_change  # FIXME from nzc/defaults Cost improvements of efficiency programme
     value: 1.024671139
     unit: '%'
   - id: is_decreasing_rate
@@ -531,17 +513,16 @@ nodes:
 
 - id: old_building_cost_shares
   name: Old building cost_shares
-  type: gpc.DatasetNode2
+  type: gpc.DatasetNode
   quantity: fraction
   unit: dimensionless
   input_dimensions: [stakeholder, cost_type]
   output_dimensions: [stakeholder, cost_type]
   input_datasets:
-  - id: nzc/defaults/stakeholders
+  - id: nzc/defaults
     forecast_from: 2023
   params:
-  - id: gpc_sector
-    value: building renovation investments
+    gpc_sector: building renovation investments
 
 - id: efficiency_programme_cost
   name: Efficiency programme cost
@@ -552,6 +533,9 @@ nodes:
   output_dimensions: [efficiency_programme, energy_carrier, stakeholder, cost_type]
   input_nodes:
   - id: efficiency_improved_buildings
+    from_dimensions:
+    - id: building_energy_class
+      flatten: true
     to_dimensions:
     - id: efficiency_programme
     - id: energy_carrier
@@ -605,9 +589,17 @@ nodes:
       categories: [electricity]
   - id: efficiency_improved_buildings
     tags: [cumulative]
+    from_dimensions:
+    - id: building_energy_class
+      flatten: true
     to_dimensions:
     - id: efficiency_programme
     - id: energy_carrier
+  output_nodes:
+  - id: total_electricity_consumption
+    from_dimensions:
+    - id: efficiency_programme
+      flatten: true
   params:
   - id: formula
     value: (building_stock + efficiency_improved_buildings) * consumer_electricity_intensity
@@ -627,8 +619,6 @@ nodes:
     to_dimensions:
     - id: energy_carrier
   - id: electricity_production_emission_factor
-    to_dimensions:
-    - id: pollutant
   output_nodes:
   - id: building_emissions
     from_dimensions:
@@ -672,7 +662,7 @@ nodes:
   name: Building cost
   type: simple.AdditiveNode
   quantity: currency
-  unit: MEUR
+  unit: MEUR  # FIXME MEUR/a
   input_dimensions: [stakeholder, cost_type]
   output_dimensions: [stakeholder, cost_type]
   input_nodes:
@@ -689,6 +679,8 @@ nodes:
     to_dimensions:  # FIXME Allocate categories correctly
     - id: stakeholder
     - id: cost_type
+#  output_nodes:
+#  - total_cost
 
 actions:
 
@@ -759,8 +751,9 @@ actions:
     - id: building_energy_class
       categories: [new_top_performance]
 
-- id: electricity_need_reduction_minor  # FIXME All renovated and newly built buildings are improved for electricity use. The question is, what fraction is minor and what is major improvement. The other question is, how much there is improvement. Take only the non-renovated from defaults/assumptions Reduced electricity need with appliances; and the minor and major improvement from these actions.
+- id: electricity_need_reduction_minor
   name: 3.3 Electricity need reduction, minor improvement
+  description: FIXME All renovated and newly built buildings are improved for electricity use. The question is, what fraction is minor and what is major improvement. The other question is, how much there is improvement. Take only the non-renovated from defaults/assumptions Reduced electricity need with appliances; and the minor and major improvement from these actions.
   type: simple.CumulativeAdditiveAction
   quantity: fraction
   unit: '%'

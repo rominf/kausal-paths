@@ -1,11 +1,11 @@
 id: nzc
 default_language: en
 supported_languages: [fi]
-frameworks: [transport_nzc, buildings_nzc]
+frameworks: [transport_nzc, buildings_nzc, other_nzc]
 site_url: https://nzc.paths.staging.kausal.tech
 dataset_repo:
   url: https://github.com/kausaltech/dvctest.git
-  commit: 0597bddf38b8cbcd616f9f12c11fd5c6906c891d
+  commit: 6103053c1b69017edc5098e03f1c09f4486f8d5b
   dvc_remote: kausal-s3
 name: Demonstration BASIC+ Greenhouse Gas Inventory
 owner: City of Demonstration
@@ -47,7 +47,7 @@ action_groups:
 - id: freight
   name: Freight
 - id: buildings
-  name: buildings
+  name: Buildings
   color: '#32cd32'
 - id: electricity
   name: Electricity
@@ -230,6 +230,10 @@ dimensions:
     label: Organic waste
   - id: other_waste
     label: Other waste (e.g. textiles, rubble, wood)
+  - id: mixed_waste
+    label: Mixed waste
+  - id: aluminium
+    label: Aluminiium
 
 - id: waste_treatment
   label: Waste treatment
@@ -250,6 +254,8 @@ dimensions:
     label: Landfill
   - id: landfill_gas
     label: Landfill gas
+  - id: composting
+    label: Composting
 
 - id: building_energy_class
   label: Building energy class
@@ -264,6 +270,16 @@ dimensions:
     label: Old, minor heating renovation
   - id: major_renovation
     label: Old, extensive heating renovation
+  - id: no_improvement  # FIXME Remove redundant
+    label: No improvement
+  - id: minor_improvements
+    label: Minor improvements
+  - id: aggressive_improvements
+    label: Aggressive improvements
+  - id: moderate_improvements
+    label: Moderate improvements
+  - id: nzeb
+    label: Net zero emission buildings
 
 - id: efficiency_programme
   label: Energy efficiency programme
@@ -274,6 +290,10 @@ dimensions:
     label: Minor improvements
   - id: aggressive_improvements
     label: Aggressive improvements
+  - id: moderate_improvements
+    label: Moderate improvements
+  - id: nzeb
+    label: Net zero emission buildings
 
 - id: heating_type
   label: Heating type
@@ -330,6 +350,8 @@ dimensions:
     label: Steel
   - id: plastics
     label: Plastics
+  - id: aluminium
+    label: Aluminium
 
 - id: stakeholder
   label: Stakeholder
@@ -365,18 +387,58 @@ nodes:
   - id: annual_change
     ref: population_growth_rate
 
+- id: total_electricity_consumption
+  name: Total electricity consumption
+  type: simple.AdditiveNode
+  quantity: energy
+  unit: GWh/a
+  input_dimensions: [energy_carrier]
+  output_dimensions: [energy_carrier]
+
+- id: statistical_electricity_consumption
+  name: Statistical electricity consumption
+  type: simple.AdditiveNode  # FIXME gpc.DatasetNode
+  quantity: energy
+  unit: GWh/a
+  historical_values: [[2018, 2152.0]]
+  input_dataset_processors: [LinearInterpolation]
+  # input_dimensions: [energy_carrier]
+  # output_dimensions: [energy_carrier]
+  # input_datasets: [nzc/defaults]
+  # params:
+  #   sector: Total electricity demand within city boundaries
+
+- id: statistical_electricity_consumption2
+  name: Statistical electricity consumption
+  description: Total consumption based on population growth. FIXME this causes double
+    counting.
+  type: simple.MultiplicativeNode
+  quantity: energy
+  unit: GWh/a
+  # input_dimensions: [energy_carrier]
+  # output_dimensions: [energy_carrier]
+  input_nodes:
+  - id: statistical_electricity_consumption
+    tags: [non_additive]
+  - id: population
+    tags: [ratio_to_last_historical_value]
+  output_nodes:
+  - id: total_electricity_consumption
+    to_dimensions:  # FIXME
+    - id: energy_carrier
+      categories: [electricity]
+
 - id: electricity_production_emission_factor
   name: Electricity production emission factor
   description: TODO Update calculations
   type: gpc.DatasetNode
   quantity: emission_factor
   unit: g/kWh
-  input_dimensions: [pollutant]
-  output_dimensions: [pollutant]
-  input_datasets: [nzc/defaults/electricity]
+  input_dimensions: [pollutant, energy_carrier]
+  output_dimensions: [pollutant, energy_carrier]
+  input_datasets: [nzc/defaults]
   params:
-  - id: gpc_sector
-    value: electricity_production_emission_factor
+    gpc_sector: electricity production emission factor
 
 - id: co2_unit_price
   name: CO2 unit price

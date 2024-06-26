@@ -2,27 +2,39 @@ nodes:
 
 # -------------- Emissions --------------
 
-- id: transport_emission_ratio
-  name_fi: Liikennepäästöjen keskinäinen suhde
-  name_en: Ratio of air pollution emissions
-  description_fi: Liikennepäästöjen keskinäinen suhde verrattuna CO2-päästöön, joka saa suhdeluvun 1.
-  description_en: Ratio of air pollution emissions from transport compared with CO2 emissions, which has the ratio 1.
-  type: gpc.DatasetRatioNode
+- id: transport_emission_factor
+  name_fi: Liikennepäästöjen päästökerroin
+  name_en: Air pollution emission factor
+  type: gpc.DatasetNode
   quantity: emission_factor
-  unit: dimensionless
+  unit: g/vkm
   input_dimensions: [pollutant]
   output_dimensions: [pollutant]
   input_datasets:
-  - id: nzc/defaults/transport
+  - id: nzc/defaults
     forecast_from: 2023
     filters:
     - column: Transport mode
       value: cars
   params:
-  - id: gpc_sector
-    value: baseline year fleet emission factor
-  - id: rename_dimensions
-    value: 'transport_pollutant:pollutant'
+    gpc_sector: baseline year fleet emission factor
+    rename_dimensions: 'transport_pollutant:pollutant'
+
+- id: transport_emission_ratio
+  name_fi: Liikennepäästöjen keskinäinen suhde
+  name_en: Ratio of air pollution emissions
+  description_fi: Liikennepäästöjen keskinäinen suhde verrattuna CO2-päästöön, joka saa suhdeluvun 1.
+  description_en: Ratio of air pollution emissions from transport compared with CO2 emissions, which has the ratio 1.
+  type: simple.AdditiveNode
+  quantity: emission_factor
+  unit: dimensionless
+  input_dimensions: [pollutant]
+  output_dimensions: [pollutant]
+  input_nodes:
+  - id: transport_emission_factor
+  params:
+  - id: use_input_node_unit_when_adding
+    value: true
   - id: reference_category
     value: 'pollutant:co2'
 
@@ -42,22 +54,35 @@ nodes:
     - id: pollutant
       categories: [pm25, pm10, nox]
 
+- id: fossil_plant_emission_factor
+  name_fi: Fossiilivoimalan ilmansaasteiden päästökerroin
+  name_en: Air pollution emission factor
+  type: gpc.DatasetNode
+  quantity: emission_factor
+  unit: g/kWh
+  input_dimensions: [pollutant, heating_type]
+  output_dimensions: [pollutant, heating_type]
+  input_datasets:
+  - id: nzc/defaults
+    forecast_from: 2023
+  params:
+    gpc_sector: heat emission factor
+
 - id: fossil_plant_emission_ratio
   name_fi: Fossiilivoimalan päästöjen keskinäinen suhde
   name_en: Ratio of air pollution emissions from fossil plants
   description_fi: Fossiilivoimalan päästöjen keskinäinen suhde verrattuna CO2-päästöön, joka saa suhdeluvun 1.
   description_en: Ratio of air pollution emissions from fossil plants compared with CO2 emissions, which has the ratio 1.
-  type: gpc.DatasetRatioNode
+  type: simple.AdditiveNode
   quantity: emission_factor
   unit: dimensionless
   input_dimensions: [pollutant, heating_type]
   output_dimensions: [pollutant, heating_type]
-  input_datasets:
-  - id: nzc/defaults/buildings
-    forecast_from: 2023
+  input_nodes:
+  - id: fossil_plant_emission_factor
   params:
-  - id: gpc_sector
-    value: heat emission factor
+  - id: use_input_node_unit_when_adding
+    value: true
   - id: reference_category
     value: 'pollutant:co2'
 
@@ -85,7 +110,7 @@ nodes:
   name_en: Intake fraction of air pollution
   description_fi: Se osuus ilmansaastepäästöstä, joka lopulta päätyy jonkun hengittämäksi.
   description_en: The fraction of air pollution emissions that is eventually inhaled by someone.
-  type: gpc.DatasetNode2
+  type: gpc.DatasetNode
   quantity: fraction
   unit: ppm
   input_dimensions: [pollutant, emission_height]
@@ -96,8 +121,7 @@ nodes:
     - column: Population density
       value: average
   params:
-  - id: gpc_sector
-    value: Air pollution
+    gpc_sector: Air pollution
 
 - id: breathing_rate
   name_fi: Hengitystilavuus
@@ -177,12 +201,21 @@ nodes:
 
 # -------------- Health effects ---------------
 
+- id: planetary_health
+  name_fi: Raakile luonnon monimuotoisuudesta ja planetaarisesta terveydestä
+  description_fi: 'https://thl.fi/thl/tietoa-meista/vaikuttamistavoitteet/planetaarinen-terveys-ja-hyvinvointi https://www.biwe.fi/ https://www.allergia.fi/jarjesto/tutkimus-1/'
+  type: simple.AdditiveNode
+  quantity: utility
+  unit: Ut/a
+  historical_values: [[2010, 100], [2023, 100]]
+  input_dataset_processors: [LinearInterpolation]
+
 - id: incidence
   name_fi: Ilmaantuvuus
   name_en: Incidence
   description_fi: Ympäristöaltisteiden kannalta olennaisten tautien ja vaikutusten ilmaantuvuus
   description_en: Incidence of environmentally relevant diseases and effects
-  type: gpc.DatasetNode2
+  type: gpc.DatasetNode
   quantity: incidence
   unit: case/personyear
   input_dimensions: [response]
@@ -195,8 +228,7 @@ nodes:
     - column: Population
       value: default
   params:
-  - id: gpc_sector
-    value: Environmental health
+    gpc_sector: Environmental health
 
 - id: air_pollution_attributable_fraction
   name_fi: Ilmansaasteiden syyosuus
@@ -218,8 +250,7 @@ nodes:
     to_dimensions:
     - id: pollutant
   params:
-  - id: gpc_sector
-    value: Air pollution
+    gpc_sector: Air pollution
 
 - id: total_number_of_cases
   name_fi: Kokonaistapausmäärä
@@ -281,7 +312,7 @@ nodes:
   name_en: Disease burden by case
   description_fi: Yhden tapauksen aiheuttama tautitaakka.
   description_en: Disease burden caused by a single case.
-  type: gpc.DatasetNode2
+  type: gpc.DatasetNode
   quantity: case_burden
   unit: DALY/case
   input_dimensions: [response]
@@ -290,8 +321,7 @@ nodes:
   - id: hia/exposure_response/air_pollution_erf
     forecast_from: 2023
   params:
-  - id: gpc_sector
-    value: Air pollution
+    gpc_sector: Air pollution
 
 - id: disease_burden_of_air_pollution
   name_fi: Ilmansaasteiden tautitaakka
